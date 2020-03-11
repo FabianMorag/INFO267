@@ -1,31 +1,41 @@
 PImage img;
 
-int nIndividuos=10;
+int nIndividuos=500;
 int nIteraciones=50;
 int d=50;
 float conv=175.78125;
-int ratioSobrevivencia=50;
+int ratioSobrevivencia=80;
 int ratioMutacion=20;
+
+int nframe=0;
+float bestX=0, bestY=0, bestVal=1000;
 
 Individuo[] poblacion;
 
 class Individuo{
-  float x, y, rx,ry, val;
+  float x, y, rx,ry, val, xg, yg;
   String binX, binY;
   
   Individuo(){
-    x=int(random(512)-256);
-    y=int(random(512)-256);
-    rx=x/100;
-    ry=y/100;
+    x=int(random(51200))-25600;
+    y=int(random(51200))-25600;
+    rx=x/10000;
+    ry=y/10000;
+    xg=(x+25600)*0.017578125;
+    yg=(y+25600)*0.017578125;
     val = 20 + rx*rx-10*cos(2*PI*rx) + ry*ry-10*cos(2*PI*ry);
     binX=numABin(x);
     binY=numABin(y);
+    if(val<bestVal){
+      bestX=rx;
+      bestY=ry;
+      bestVal=val;
+    }
   }
   
   void display(){
     fill(0, 255, 0);
-    ellipse (x,y,20,20);
+    ellipse (xg,yg,10,10);
   }
 }
 
@@ -44,11 +54,23 @@ String numABin(float num){
     }
     num=int(num/2);
   }
+  for(int i=binario.length(); i<16; i++){
+    binario="0"+binario;
+  }
   return signo+binario;
 }
 
-int binANum(String binario){
-  
+int binANum(String bin){
+  char bit=' ';
+  int val=2;
+  int suma=0;
+  int c=0;
+  for(int i=1; i>0; i--){
+    bit=bin.charAt(i);
+    suma+=int(bit)*val*2^c;
+    c++;
+  }
+  if (bin.charAt(0)=='-') suma=suma*-1;
   return 0;
 }
 
@@ -62,25 +84,25 @@ void combinacion(){
   int n1, n2;
   String xh="";
   String yh="";
-  for(int i=0; i<(nIndividuos*(1-ratioSobrevivencia/100)); i++){
+  for(int i=0; i<nIndividuos*(1-ratioSobrevivencia/100); i++){
     n1=int(random(count));
     String xp1=sobrevivientes[n1].binX;
     String yp1=sobrevivientes[n1].binY;
     n2=int(random(count));
     String xp2=sobrevivientes[n2].binX;
-    String yp2=sobrevivientes[n1].binY;
-    for(int j=0; j<xp1.length(); j++){
+    String yp2=sobrevivientes[n2].binY;
+    for(int j=0; j<16; j++){
       if(random(100)<=ratioMutacion){
         if(j==0){
           if(int(random(2))==0){
             xh=xh+"0";
           }else{
-            xh=xh+".";
+            xh=xh+"-";
           }
           if(int(random(2))==0){
             yh=yh+"0";
           }else{
-            yh=yh+".";
+            yh=yh+"-";
           }
           
         }else{
@@ -98,12 +120,12 @@ void combinacion(){
       }
     }
     Individuo ind=new Individuo();
-    ind.binX=xh;
-    ind.binY=yh;
-    sobrevivientesFinal[count+i+1]=ind;
+    ind.x=binANum(xh);
+    ind.y=binANum(yh);
+    sobrevivientesFinal[count+i]=ind;
   }
   poblacion=new Individuo[sobrevivientesFinal.length];
-  poblacion=sobrevivientes;
+  poblacion=sobrevivientesFinal;
 }
 
 Individuo[] sobrevivencia(Individuo[] poblacion){
@@ -131,7 +153,7 @@ void despliegaBest(){
   PFont f = createFont("Arial",16,true);
   textFont(f,15);
   fill(#000000);
-  text("Best fitness: "+poblacion[0].val+"\nEvals to best: "+poblacion[9].val+"\nEvals: "+"wena wena",10,20);
+  text("Frame numero: " + nframe + "\nMejor Posicion X: " + bestX + "\nMejor Posicion Y: " + bestY + "\nMejor Valor: " + bestVal, 10, 20);
 }
 
 void setup(){
@@ -149,8 +171,11 @@ void draw(){
   for(int i=0; i<nIndividuos; i++){
     poblacion[i].display();
   }
+  sobrevivencia(poblacion);
+  combinacion();
   ordenar();
   despliegaBest();
+  nframe+=1;
   
   //noStroke();
 }
